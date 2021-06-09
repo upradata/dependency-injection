@@ -1,0 +1,15 @@
+{
+    // for VSCODE only
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "lib-dummy",
+        "module": "ESNext",
+    },
+    "include": [
+        "src",
+        "test"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
