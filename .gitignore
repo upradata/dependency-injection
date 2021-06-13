@@ -4,5 +4,4 @@ lib-esm
 _bundles
 bundles
 .directory
-test
 coverage

@@ -1,7 +1,7 @@
 
 import { Injector, InjectorOptions } from './injector';
 import { Provider, FactoryProvider, isValueProvider, isClassProvider, isFactoryProvider, } from './provider';
-import { ProviderToken, ClassToken, IdToken, isClassToken, ClassProviderToken, DI_DEPS, DI_PROVIDED_IN_ROOT, DI_PROVIDED_IN } from './token';
+import { ProviderToken, ClassToken, IdToken, isClassToken, ClassProviderToken, DI_DEPS, DI_PROVIDED_IN_ROOT, DI_PROVIDED_IN, DI_CREATE_INSTANCE } from './token';
 
 interface SuccessValue<T> {
     value: T;
@@ -115,7 +115,13 @@ export class DiInjector extends Injector {
     }
 
     createInstance<T>(P: ClassProviderToken<T>): T {
-        return P[ DI_DEPS ] ? new P(...P[ DI_DEPS ].map(dep => this.get(dep))) : new P();
+        P[ DI_CREATE_INSTANCE ] = true;
+
+        const instance = P[ DI_DEPS ] ? new P(...P[ DI_DEPS ].map(dep => this.get(dep))) : new P();
+
+        delete P[ DI_CREATE_INSTANCE ];
+
+        return instance;
     }
 
     private createFromOverride<T>(provider: Provider<T>): T {

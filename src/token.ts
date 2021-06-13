@@ -4,7 +4,7 @@ import { Injector } from './injector';
 export const DI_DEPS = Symbol('di dependencies');
 export const DI_PROVIDED_IN_ROOT = Symbol('is root service?');
 export const DI_PROVIDED_IN = Symbol('provided in a specific injector');
-
+export const DI_CREATE_INSTANCE = Symbol('instance created by DI');
 
 
 export type ClassProviderTokenBase = {

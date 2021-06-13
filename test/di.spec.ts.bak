@@ -1,0 +1,18 @@
+/* eslint-disable max-classes-per-file */
+import { Injector } from '../src';
+
+class Test1 { }
+class Test1Bis { }
+class Test2 { }
+class Test3 { }
+class Test4 { }
+
+
+Injector.init({
+    providers: [
+        { provide: Test1, useClass: Test1Bis },
+        { provide: Test2, useValue: { value: 'test2' } },
+        { provide: Test3, useFactory: (a, b) => ({ value: a + b }), deps: [ 1, 2 ] },
+    ],
+    bootstrap: [ GrandLivre, BalanceDesComptes, JournalCentraliseur, PlanComptable, Journaux, Pieces ]
+});
