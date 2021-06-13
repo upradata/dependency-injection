@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 
-import { DiInjector, Inject, RootService, ProvidedIn, Component, AppInjector, INJECT } from '../src';
+import { DiInjector, Inject, RootService, ProvidedIn, Component, AppInjector, INJECT, InjectProp } from '../src';
 
 
 describe('Injector Decorator', () => {
@@ -120,6 +120,22 @@ describe('Injector Decorator', () => {
 
         expect(new FooService(11, 22, 'anything', 33).bar).toBe('anything');
         expect(new FooService(11, 22, INJECT, 33).bar).toBe(injector.get(BarService));
+    });
 
+
+    it('should inject the class in the member with @InjectProp', () => {
+        const injector = new DiInjector();
+        class BarService { }
+
+
+        @Component({ injector })
+        class FooService {
+            @InjectProp(BarService, { injector }) public bar?: BarService;
+            constructor(public a = 1) { }
+        }
+
+        const foo = injector.get(FooService);
+        expect(foo.bar).toBe(injector.get(BarService));
+        expect(foo.a).toBe(1);
     });
 });

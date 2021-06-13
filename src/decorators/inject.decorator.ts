@@ -1,6 +1,6 @@
 import { Injector } from '../injector';
 import { AppInjector } from '../injector.app';
-import { ClassToken, ClassProviderToken, DI_DEPS, ProviderToken, DI_CREATE_INSTANCE } from '../token';
+import { ClassToken, ClassProviderToken, DI_DEPS, ProviderToken, DI_CREATE_INSTANCE, DI_DECORATED_MEMBERS } from '../token';
 
 
 export const Inject = (injectable: ProviderToken<any>) => {
@@ -50,6 +50,9 @@ export const Component = (options: InjectPropOptions = {}) => {
         return class C extends klass {
             constructor(...args: any[]) {
                 super(...(isFromDI(C) ? args : mergeArgs(args, klass[ DI_DEPS ] || [])));
+
+                const decoratedMembers = C[ DI_DECORATED_MEMBERS ]?.filter((m: string) => m in this) as string[];
+                decoratedMembers?.forEach(m => delete this[ m ]);
             }
         };
     };
@@ -57,36 +60,19 @@ export const Component = (options: InjectPropOptions = {}) => {
 
 
 
-/*
-export interface InjectPropOptions {
-    injector?: Injector;
-}
-
-
 export function InjectProp<T>(provider: ProviderToken<T>, options: InjectPropOptions = {}) {
     if (provider === undefined) {
         throw new Error(`The dependence provider injected is "undefined". It can be caused by a [Circular] reference in your import.`);
     }
 
-    // const diInject = Inject(provider);
+    // target can be either the class for static members or the class prototype for instance members
+    return (target: any, propertyKey: string | symbol) => {
+        const isProto = typeof target === 'object';
 
-    return (klass: ClassToken<any>, _propertyKey: string | symbol, parameterIndex: number) => {
-        // propertyKey is always undefined because it is not a parameter decorator
-        const constructorArgs: string = klass.toString().match(/constructor[^(]*\(([^)]*)\)/)[ 1 ];
+        const klass = isProto ? target.constructor : target;
+        klass[ DI_DECORATED_MEMBERS ] = [ ... (klass[ DI_DECORATED_MEMBERS ] || []), propertyKey ];
 
-        if (!constructorArgs || parameterIndex >= constructorArgs.split(/\W+/).length) {
-            const providerName: string = (provider as any).name || String(provider);
-            throw new Error(`Argument ${parameterIndex} in ${klass.name}.constructor is missing to inject ${providerName}`);
-        }
-
-        const argumentName = constructorArgs.split(/\W+/)[ parameterIndex ];
-
-        // call di @Inject (it is defining the provider dependencies if classPrototype will be instantiated)
-        // diInject(klass, argumentName, parameterIndex);
-
-        // Injector.root will be instanciated after, so we can call it later
-        debugger;
-        Object.defineProperty(klass.prototype, argumentName, {
+        Object.defineProperty(target, propertyKey, {
             get: () => (options.injector || AppInjector.root).get(provider),
             // writable: false,
             configurable: false,
@@ -94,4 +80,3 @@ export function InjectProp<T>(provider: ProviderToken<T>, options: InjectPropOpt
         });
     };
 }
- */
