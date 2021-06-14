@@ -1,14 +1,24 @@
 
 import { Injector, InjectorOptions } from './injector';
-import { Provider, FactoryProvider, isValueProvider, isClassProvider, isFactoryProvider, } from './provider';
-import { ProviderToken, ClassToken, IdToken, isClassToken, ClassProviderToken, DI_DEPS, DI_PROVIDED_IN_ROOT, DI_PROVIDED_IN, DI_CREATE_INSTANCE } from './token';
+import {
+    FactoryProvider,
+    isClassProvider,
+    isFactoryProvider,
+    isValueProvider,
+    Provider
+} from './provider';
+import {
+    ClassProviderToken,
+    ClassToken,
+    DI_CREATE_INSTANCE,
+    DI_DEPS,
+    DI_PROVIDED_IN,
+    DI_PROVIDED_IN_ROOT,
+    IdToken,
+    isClassToken,
+    ProviderToken
+} from './token';
 
-interface SuccessValue<T> {
-    value: T;
-    success: boolean;
-}
-
-const successify = <T>(v: T) => ({ value: v, success: !!v });
 
 
 /**
@@ -19,55 +29,67 @@ const successify = <T>(v: T) => ({ value: v, success: !!v });
  * @param parent a parent instance of Injector
  */
 export class DiInjector extends Injector {
-    private classProviderMap = new WeakMap<ClassToken<any>, any>();
-    private idProviderMap = new Map<IdToken<any>, any>();
+    private classProviderMap: WeakMap<ClassToken<any>, any>;
+    private idProviderMap: Map<IdToken<any>, any>;
 
-    constructor(opts?: InjectorOptions, parent?: DiInjector) {
+    constructor(opts?: InjectorOptions, parent?: Injector) {
         super(opts, parent);
+
+        this.init();
 
         if (this.opts.bootstrap)
             this.opts.bootstrap.forEach(provider => this.get(provider));
     }
 
+    private init() {
+        this.classProviderMap = new WeakMap();
+        this.idProviderMap = new Map();
+    }
+
+    reset() {
+        this.init();
+    }
+
+    root(): Injector {
+        const root = (current: Injector) => current.parent ? root(current.parent) : current;
+        return root(this);
+    }
+
+
     /**
      * recursively check if a singleton instance is available for a provider
      */
     has(token: ProviderToken<any>): boolean {
-        return !!this.get(token);
+        return !!this.whoHas(token);
     }
 
-    resolveProvider<T>(token: ProviderToken<T>, recursive = true): SuccessValue<T> {
+    whoHas(token: ProviderToken<any>): Injector {
+        const hasToken = this.classProviderMap.has(token) || this.idProviderMap.has(token);
 
-        if (isClassToken(token) && (token[ DI_PROVIDED_IN_ROOT ] || token.providedInRoot) && this.parent) {
-            const rootInjector = (current: Injector): Injector => current.parent ? rootInjector(current.parent) : current;
-            const root = rootInjector(this);
+        return hasToken ? this : this.parent?.whoHas(token) ?? null;
+    }
 
-            return successify(root.get(token));
-        }
-
+    getNewValue<T>(token: ProviderToken<T>): T {
         const provider = this.getProviderFromOptions(token);
 
-        if (provider) {
-            // if an override is available for this Injector use that
-            return successify(this.createFromOverride(provider));
-        }
+        // if an override is available for this Injector use that
+        if (provider)
+            return this.createFromOverride(provider);
 
+        if (isClassToken(token))
+            return this.createInstance(token as ClassProviderToken<any>);
 
-        if (recursive) {
-            const resolved = successify(this.parent?.get<T>(token));
-
-            if (resolved.success)
-                return resolved;
-        }
-
-        // only a class can be instatiated from the token
-        /*  if (!isClassProviderToken(token))
-             return { value: null, success: false }; */
-
-        // if nothing else found assume provider is a class provider
-        return successify(this.createInstance(token as ClassProviderToken<any>));
+        return null;
     }
 
+
+    private set<T>(token: ProviderToken<T>, value: any): void {
+        if (isClassToken(token)) {
+            this.classProviderMap.set(token, value);
+        } else {
+            this.idProviderMap.set(token, value);
+        }
+    }
 
     getStrcit<T>(token: ProviderToken<T>): T {
         if (isClassToken(token) && this.classProviderMap.has(token)) {
@@ -79,40 +101,43 @@ export class DiInjector extends Injector {
             return this.idProviderMap.get(token);
         }
 
-        return null;
-    }
+        const value = this.getNewValue(token);
 
-    private set<T>(token: ProviderToken<T>, value: any): void {
-        if (isClassToken(token)) {
-            this.classProviderMap.set(token, value);
-        } else {
-            this.idProviderMap.set(token, value);
-        }
-    }
-
-    /**
-     * fetches a singleton instance of a provider
-     */
-    get<T>(token: ProviderToken<T>, recursive = true): T {
-
-        if (isClassToken(token) && token[ DI_PROVIDED_IN ] && token[ DI_PROVIDED_IN ] !== this && recursive) {
-            return token[ DI_PROVIDED_IN ].get(token, false);
-        }
-
-        const v = successify(this.getStrcit(token));
-
-        if (v.success)
-            return v.value;
-
-        const { success, value } = this.resolveProvider<T>(token, recursive);
-
-        if (success) {
+        if (value) {
             this.set(token, value);
             return value;
         }
 
-        throw new Error(`The token "${token}" is not a class and does not have any provider defined`);
+        return null;
+        // throw new Error(`The token "${token}" is not a class and does not have any provider defined`);
     }
+
+
+    /**
+     * fetches a singleton instance of a provider
+     */
+    get<T>(token: ProviderToken<T>): T {
+
+        if (isClassToken(token) && token[ DI_PROVIDED_IN ] && token[ DI_PROVIDED_IN ] !== this) {
+            return token[ DI_PROVIDED_IN ].getStrcit(token);
+        }
+
+        if (isClassToken(token) && (token[ DI_PROVIDED_IN_ROOT ] || token.providedInRoot) && this.parent) {
+            return this.root().getStrcit(token);
+        }
+
+
+        if (this.getProviderFromOptions(token))
+            return this.getStrcit(token);
+
+        const injector = this.whoHas(token);
+
+        if (injector)
+            return injector.getStrcit(token);
+
+        return this.getStrcit(token);
+    }
+
 
     createInstance<T>(P: ClassProviderToken<T>): T {
         P[ DI_CREATE_INSTANCE ] = true;
@@ -134,7 +159,7 @@ export class DiInjector extends Injector {
         if (isFactoryProvider(provider))
             return this.createFromFactory(provider);
 
-        throw new Error(`Provider must use one a value, class or factory provider.`);
+        throw new Error(`Provider type must be a value, class or factory.`);
     }
 
     private createFromFactory<T>(provider: FactoryProvider<T>) {

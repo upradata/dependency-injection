@@ -1,5 +1,3 @@
-/* eslint-disable max-classes-per-file */
-
 import { DiInjector, ProviderToken, Inject } from '../src';
 
 
@@ -116,6 +114,7 @@ describe('DiInjector', () => {
         ).toBe('Goodbye World');
     });
 
+
     it('immediately initialize specified providers', () => {
         const initialized: ProviderToken<any>[] = [];
 
@@ -137,6 +136,7 @@ describe('DiInjector', () => {
         expect(initialized).toEqual([ FooService, BarService ]);
     });
 
+
     it('should return the same instance when called', () => {
         class BarService { }
 
@@ -149,6 +149,7 @@ describe('DiInjector', () => {
         expect(app.get(FooService).bar).toBe(app.get(BarService));
     });
 
+
     it('should return different instances', () => {
         class BarService { }
 
@@ -160,6 +161,7 @@ describe('DiInjector', () => {
 
         expect(app.createInstance(FooService)).not.toBe(app.get(FooService));
     });
+
 
     it('should return an instance from a parent DiInjector', () => {
         class BarService { }
@@ -187,6 +189,7 @@ describe('DiInjector', () => {
         expect(app.get(BazService)).toBe(bazInstance);
     });
 
+
     it('should use the override in scope over everything else', () => {
         class BarService { }
 
@@ -210,8 +213,10 @@ describe('DiInjector', () => {
             child2
         );
 
+        debugger;
         expect(parent.get(FooService)).not.toBe(app.get(FooService));
     });
+
 
     it('should be able to use an abstract class as an injection token', () => {
         abstract class MyService {
@@ -234,6 +239,7 @@ describe('DiInjector', () => {
         expect(app.get(MyService).sayHello()).toBe('TESTING');
     });
 
+
     it('should return an instance when using a factory provider', () => {
         class MyService {
             constructor(private test: string) { }
@@ -254,6 +260,7 @@ describe('DiInjector', () => {
 
         expect(app.get(MyService).sayHello()).toBe('HELLO WORLD TEST');
     });
+
 
     it('should return an instance when using a factory provider with deps', () => {
         class MyFirstService {
@@ -281,7 +288,31 @@ describe('DiInjector', () => {
         expect(app.get(MyService).sayHello()).toBe('HELLO WORLD TESTING');
     });
 
-    it('should worlk with custom decortors', () => {
+
+    it('should return an instance when using a value provider', () => {
+        class MyService {
+            constructor(private test: string) { }
+
+            sayHello(): string {
+                return `HELLO WORLD ${this.test}`;
+            }
+        }
+
+        const app = new DiInjector({
+            providers: [
+                {
+                    provide: MyService,
+                    useValue: { sayHello: () => 'I am a new value' } as MyService
+                }
+            ]
+        });
+
+        expect(app.get(MyService).sayHello()).toBe('I am a new value');
+    });
+
+
+
+    it('should work with custom decortors', () => {
         class MyFirstService {
             sayHello() { return 'TESTING'; }
         }
@@ -301,6 +332,7 @@ describe('DiInjector', () => {
         expect(app.get(MyService).sayHello()).toBe('HELLO WORLD TESTING');
     });
 
+
     it('should use the root parent if provideInRoot is true', () => {
         class BarService {
             static providedInRoot = true;
@@ -319,5 +351,86 @@ describe('DiInjector', () => {
         const app = new DiInjector({}, child2);
 
         expect(app.get(FooService)).toBe(parent.get(FooService));
+    });
+
+
+    it('should reset DI internal state', () => {
+        class BarService { }
+
+        class FooService {
+            constructor(@Inject(BarService) public bar: BarService) { }
+        }
+
+
+        const parent = new DiInjector();
+        const app = new DiInjector({}, parent);
+
+        const foo = app.get(FooService);
+        const bar = parent.get(BarService);
+
+        expect(app.get(FooService)).toBe(foo);
+        expect(parent.get(BarService)).toBe(bar);
+
+        parent.reset();
+        app.reset();
+
+        expect(app.get(FooService)).not.toBe(foo);
+        expect(parent.get(BarService)).not.toBe(bar);
+    });
+
+
+    it('should return same instance', () => {
+        class BarService { }
+
+        class FooService {
+            constructor(@Inject(BarService) public bar: BarService) { }
+        }
+
+
+        const parent = new DiInjector();
+        const app = new DiInjector({}, parent);
+
+        let foo = app.get(FooService);
+        let bar = parent.get(BarService);
+
+        expect(app.get(FooService)).toBe(foo);
+        expect(parent.get(BarService)).toBe(bar);
+
+        foo = app.get(FooService);
+        bar = parent.get(BarService);
+
+        expect(app.get(FooService)).toBe(foo);
+        expect(parent.get(BarService)).toBe(bar);
+    });
+
+
+    it('should return if value was already injected', () => {
+        class BarService { }
+
+
+        class FooService {
+            constructor(@Inject(BarService) public bar: BarService) { }
+        }
+
+
+        const parent = new DiInjector();
+        const app = new DiInjector({}, parent);
+
+
+        expect(app.has(FooService)).toBe(false);
+        expect(app.has(BarService)).toBe(false);
+
+        app.get(FooService);
+
+        expect(app.has(FooService)).toBe(true);
+        expect(app.has(BarService)).toBe(true);
+
+        expect(parent.has(FooService)).toBe(false);
+        expect(parent.has(BarService)).toBe(false);
+
+        parent.get(FooService);
+
+        expect(parent.has(FooService)).toBe(true);
+        expect(parent.has(BarService)).toBe(true);
     });
 });

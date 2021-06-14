@@ -1,5 +1,3 @@
-/* eslint-disable max-classes-per-file */
-
 import { DiInjector, Inject, RootService, ProvidedIn, Component, AppInjector, INJECT, InjectProp } from '../src';
 
 

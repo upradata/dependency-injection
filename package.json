@@ -9,7 +9,7 @@
         "url": "https://github.com/upradata/dependency-injection"
     },
     "license": "MIT",
-    "version": "1.1.2",
+    "version": "2.0.0",
     "description": "Set of typescript util tools working in Web runtime",
     "sideEffects": false,
     "main": "lib",
@@ -29,7 +29,7 @@
         "test": "npx jest --verbose false --config jest-ut.config.js",
         "e2e": "npx jest --passWithNoTests --verbose false --config jest-e2e.config.js",
         "coverage": "npx jest --passWithNoTests --verbose false --coverage --config jest-ut.config.js",
-        "github-push": "npm run build && npm version patch && git pushall && git pushall-tags",
+        "github-push": "npm version patch && git pushall && git pushall-tags",
         "npm-publish": "npm run build && npm publish --access public"
     },
     "devDependencies": {
