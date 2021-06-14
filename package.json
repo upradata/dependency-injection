@@ -9,7 +9,7 @@
         "url": "https://github.com/upradata/dependency-injection"
     },
     "license": "MIT",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Set of typescript util tools working in Web runtime",
     "sideEffects": false,
     "main": "lib",
