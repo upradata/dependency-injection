@@ -50,8 +50,17 @@ export class DiInjector extends Injector {
         this.init();
     }
 
+    resetAll() {
+        const loopParent = (current: Injector): void => {
+            current.reset();
+            return current.parent ? loopParent(current.parent) : undefined;
+        };
+
+        loopParent(this);
+    }
+
     root(): Injector {
-        const root = (current: Injector) => current.parent ? root(current.parent) : current;
+        const root = (current: Injector): Injector => current.parent ? root(current.parent) : current;
         return root(this);
     }
 
@@ -91,7 +100,7 @@ export class DiInjector extends Injector {
         }
     }
 
-    getStrcit<T>(token: ProviderToken<T>): T {
+    getStrict<T>(token: ProviderToken<T>): T {
         if (isClassToken(token) && this.classProviderMap.has(token)) {
             return this.classProviderMap.get(token);
         }
@@ -119,23 +128,23 @@ export class DiInjector extends Injector {
     get<T>(token: ProviderToken<T>): T {
 
         if (isClassToken(token) && token[ DI_PROVIDED_IN ] && token[ DI_PROVIDED_IN ] !== this) {
-            return token[ DI_PROVIDED_IN ].getStrcit(token);
+            return token[ DI_PROVIDED_IN ].getStrict(token);
         }
 
         if (isClassToken(token) && (token[ DI_PROVIDED_IN_ROOT ] || token.providedInRoot) && this.parent) {
-            return this.root().getStrcit(token);
+            return this.root().getStrict(token);
         }
 
 
         if (this.getProviderFromOptions(token))
-            return this.getStrcit(token);
+            return this.getStrict(token);
 
         const injector = this.whoHas(token);
 
         if (injector)
-            return injector.getStrcit(token);
+            return injector.getStrict(token);
 
-        return this.getStrcit(token);
+        return this.getStrict(token);
     }
 
 

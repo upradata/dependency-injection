@@ -16,7 +16,7 @@ export abstract class Injector {
 
     abstract has(token: ProviderToken<any>): boolean;
     abstract whoHas(token: ProviderToken<any>): Injector;
-    abstract getStrcit<T>(token: ProviderToken<T>): T;
+    abstract getStrict<T>(token: ProviderToken<T>): T;
     abstract get<T>(token: ProviderToken<T>, recursive?: boolean): T;
     abstract createInstance<T>(P: ClassProviderToken<T>): T;
     abstract reset(): void;

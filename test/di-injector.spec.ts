@@ -178,13 +178,13 @@ describe('DiInjector', () => {
 
         const app = new DiInjector({}, child2);
 
-        const parentInstance = parent.get(FooService);
-        const child2Instance = child2.get(FooService);
+        const fooParentInstance = parent.get(FooService);
+        const fooChild2Instance = child2.get(FooService);
         const bazInstance = app.get(BazService);
 
-        expect(app.get(FooService)).toBe(child2Instance);
-        expect(child2.get(FooService)).toBe(child2Instance);
-        expect(child1.get(FooService)).toBe(parentInstance);
+        expect(app.get(FooService)).toBe(fooChild2Instance);
+        expect(child2.get(FooService)).toBe(fooChild2Instance);
+        expect(child1.get(FooService)).toBe(fooParentInstance);
 
         expect(app.get(BazService)).toBe(bazInstance);
     });
@@ -213,7 +213,6 @@ describe('DiInjector', () => {
             child2
         );
 
-        debugger;
         expect(parent.get(FooService)).not.toBe(app.get(FooService));
     });
 
@@ -404,7 +403,7 @@ describe('DiInjector', () => {
     });
 
 
-    it('should return if value was already injected', () => {
+    it('should return true if value was already injected', () => {
         class BarService { }
 
 

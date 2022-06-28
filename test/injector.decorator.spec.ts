@@ -129,11 +129,13 @@ describe('Injector Decorator', () => {
         @Component({ injector })
         class FooService {
             @InjectProp(BarService, { injector }) public bar?: BarService;
+            @InjectProp(BarService, { injector }) static bar2?: BarService;
             constructor(public a = 1) { }
         }
 
         const foo = injector.get(FooService);
         expect(foo.bar).toBe(injector.get(BarService));
+        expect(FooService.bar2).toBe(injector.get(BarService));
         expect(foo.a).toBe(1);
     });
 });

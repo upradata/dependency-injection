@@ -1,4 +1,4 @@
-const NodeEnvironment = require('jest-environment-node');
+const NodeEnvironment = require('jest-environment-node').default;
 
 class JestCustomEnvironment extends NodeEnvironment {
     constructor(config) {
